@@ -1,0 +1,41 @@
+{
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "conflicts": [],
+  "createdAt": "2026-09-13T08:04:30.090Z",
+  "draft": {
+    "alternatives": [],
+    "consequences": [
+      "新建 <app>/tests/ 前先确认没有同名 tests.py（会遮蔽包，导致整个应用的用例被静默跳过）",
+      "不要用 __init__.py 承载 urlpatterns；每个应用的 API 路由固定放 <app>/api/urls.py",
+      "改动既有文件前先 read，否则编辑工具会拒绝并要求先读"
+    ],
+    "evidence": [
+      {
+        "endLine": 3,
+        "path": "backend/accounts/api/urls.py",
+        "sha256": "0504a054ce4249eb1bb3bfe3748f30727eedc3202954f024b21b5ad575094706",
+        "startLine": 1
+      },
+      {
+        "endLine": 22,
+        "path": "backend/apiapp/urls.py",
+        "sha256": "ec8cbc81f8a12d0c3ac2f2c684d388808b98aa0e1094b39509701d524151f125",
+        "startLine": 15
+      }
+    ],
+    "rationale": "本次多次因「想当然」制造冲突：同时创建了 tests.py 与 tests/ 目录（会遮蔽包），以及把 urlpatterns 写进 api/__init__.py 后又另建 api/urls.py（两个应用各犯一次）。这些都是先看目录结构就能避免的低级错误，且 tests.py 遮蔽包还会让用例静默消失，属于难以察觉的隐患。",
+    "subject": "文件组织纪律",
+    "summary": "创建文件或改既有文件前，先确认目标路径与目录现状，避免制造命名冲突。本项目有两条硬性约定：每个应用的测试位于 <app>/tests/ 包内（绝不能同时存在 <app>/tests.py，否则包被遮蔽、用例被静默跳过）；API 路由固定放在 <app>/api/urls.py，不要写进 <app>/api/__init__.py。",
+    "supersedes": [],
+    "tags": [
+      "约定",
+      "结构",
+      "教训"
+    ],
+    "title": "写文件前先看目录：避免 tests.py/tests 冲突与 __init__ 误放路由",
+    "type": "convention"
+  },
+  "id": "candidate_7222bf53-e7cb-44b9-bfee-8d38384cdc7d",
+  "sessionId": "session-49fb8693-1a56-4587-b2c4-05604661920e",
+  "state": "pending"
+}

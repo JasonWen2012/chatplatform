@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}登录 · 微信风即时通信{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+  <div class="auth-brand">
+    <div class="auth-logo">💬</div>
+    <h1>欢迎回来</h1>
+    <p class="auth-sub">登录后即可开始聊天</p>
+  </div>
+
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+  <form method="post" class="auth-form" autocomplete="on">
+    {% csrf_token %}
+    <label class="field">
+      <span>用户名 / 昵称</span>
+      <input type="text" name="username" value="{{ username }}" required autofocus
+             placeholder="请输入用户名" autocomplete="username">
+    </label>
+    <label class="field">
+      <span>密码</span>
+      <input type="password" name="password" required
+             placeholder="请输入密码" autocomplete="current-password">
+    </label>
+    <button type="submit" class="btn btn-primary btn-block">登 录</button>
+  </form>
+
+  <p class="auth-foot">
+    还没有账号？<a href="{% url 'web-register' %}">立即注册</a>
+    <span class="dot">·</span>
+    <a href="{% url 'web-api-docs' %}">协议文档</a>
+  </p>
+</div>
+{% endblock %}

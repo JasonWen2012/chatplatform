@@ -1,0 +1,34 @@
+{% extends "ops/base.html" %}
+{% block title %}操作日志{% endblock %}
+{% block heading %}操作日志{% endblock %}
+
+{% block content %}
+<div class="ops-card">
+  <div class="ops-toolbar" style="margin-bottom:12px">
+    <select class="ops-select" id="auditAction">
+      <option value="">全部动作</option>
+      <option value="user.ban">禁用用户</option>
+      <option value="user.unban">解禁用户</option>
+      <option value="user.revoke_tokens">强制下线</option>
+      <option value="message.remove">移除消息</option>
+      <option value="report.resolve">举报结案</option>
+      <option value="report.dismiss">举报驳回</option>
+      <option value="conversation.view">查看会话</option>
+    </select>
+  </div>
+
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead>
+        <tr><th>时间</th><th>操作人</th><th>动作</th><th>对象</th><th>说明</th></tr>
+      </thead>
+      <tbody id="auditBody"></tbody>
+    </table>
+  </div>
+  <div id="auditPager"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>document.body.dataset.page = 'audit';</script>
+{% endblock %}

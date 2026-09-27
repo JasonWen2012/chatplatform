@@ -1,0 +1,34 @@
+{% extends "ops/base.html" %}
+{% block title %}举报处理{% endblock %}
+{% block heading %}举报处理{% endblock %}
+
+{% block content %}
+<div class="ops-card">
+  <div class="ops-toolbar" style="margin-bottom:12px">
+    <select class="ops-select" id="reportsStatus">
+      <option value="pending">待处理</option>
+      <option value="resolved">已处理</option>
+      <option value="dismissed">已驳回</option>
+      <option value="">全部</option>
+    </select>
+    <span class="muted" style="font-size:13px">待处理总数：<strong id="pendingReports">0</strong></span>
+  </div>
+
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead>
+        <tr><th>ID</th><th>被举报内容</th><th>举报人 / 理由</th><th>状态</th><th>操作</th></tr>
+      </thead>
+      <tbody id="reportsBody"></tbody>
+    </table>
+  </div>
+  <div id="reportsPager"></div>
+  <p class="muted" style="font-size:12px;margin:10px 0 0">
+    「移除并结案」会同时删除被举报消息并通知会话成员；「驳回」只改状态，不动消息。
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>document.body.dataset.page = 'reports';</script>
+{% endblock %}

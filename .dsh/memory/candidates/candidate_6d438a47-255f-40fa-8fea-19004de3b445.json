@@ -1,0 +1,45 @@
+{
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "conflicts": [],
+  "createdAt": "2026-09-13T08:04:22.690Z",
+  "draft": {
+    "alternatives": [],
+    "consequences": [
+      "探测失败时先用项目已知可行的手段（如 Django 测试客户端直连同一视图）确认应用行为，再逐步加变量定位探针",
+      "先读工具输出里的具体细节（乱码、缺失的 cookie 名），不要急着换方案",
+      "应用缺陷修在源码并补测试锁定，改测试期望值只会把 bug 埋起来"
+    ],
+    "evidence": [
+      {
+        "endLine": 50,
+        "path": "backend/realtime/views.py",
+        "sha256": "d57ebbacee27ada6e0a7003ca2b3e2208214da8568f3ac747a78e521daf62fb1",
+        "startLine": 38
+      },
+      {
+        "endLine": 66,
+        "path": "backend/chat/api/views.py",
+        "sha256": "b07b2798b69e5205975701298e6ab566cccb29ee447010c5adde621a8c3e8b88",
+        "startLine": 46
+      }
+    ],
+    "rationale": "本次两次严重误判：把中文路径参数乱码判断为沙箱禁止执行脚本（实际只需 PYTHONUTF8=1）；把 HTTP 登录探针失败判断为 CSRF 修复无效（实际是探针手写 Cookie 头漏了 sessionid，跟随跳转时处于未登录态）。两次都消耗大量往返，最终靠测试客户端（302）与探针（200）的对照才定位。另有两个真实缺陷（timeout=0 被 or 当假值而回落到 25 秒上限、旧头像因对象别名导致永不删除）最初也被误认为测试写错。",
+    "subject": "问题排查方法",
+    "summary": "探针（脚本或 HTTP 请求）失败时，不要先怀疑被测应用：先用已知可行的手段做最小对照（例如用 Django 测试客户端直连同一视图），确认应用行为，再逐个加变量定位探针自身的缺陷。工具报错里往往已含真实原因（argv 乱码、缺失的 cookie 名），要先读细节而非换方案。修复要落在源码并补测试锁定，不要靠改测试期望值让用例变绿。",
+    "supersedes": [],
+    "tags": [
+      "调试",
+      "方法论",
+      "教训"
+    ],
+    "title": "探针失败先做最小对照，不要先怀疑应用",
+    "type": "lesson"
+  },
+  "id": "candidate_6d438a47-255f-40fa-8fea-19004de3b445",
+  "resolution": {
+    "at": "2026-09-13T08:05:56.467Z",
+    "memoryId": "memory_98a154a1-46c1-4b18-9e52-88a306230d5e"
+  },
+  "sessionId": "session-49fb8693-1a56-4587-b2c4-05604661920e",
+  "state": "approved"
+}

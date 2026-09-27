@@ -1,0 +1,40 @@
+{
+  "alternatives": [],
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "approvedAt": "2026-09-13T08:33:41.509Z",
+  "approvedBy": "human",
+  "consequences": [
+    "验收脚本检查跳转时，要用不自动跟随跳转的客户端读 Location 头并单独请求目标页",
+    "仅断言最终页面为 200 会漏掉「跳到错误地址」这类缺陷",
+    "新增受保护页面时同时断言 next 回跳参数"
+  ],
+  "createdAt": "2026-09-13T08:32:20.635Z",
+  "evidence": [
+    {
+      "endLine": 30,
+      "path": "backend/apiapp/tests/test_csrf_and_proxy.py",
+      "sha256": "044228dfff8d5405d8d8edf0954b651d569efea2ffd866a87b3fd9ed67c0d65d",
+      "startLine": 17
+    },
+    {
+      "endLine": 62,
+      "path": "backend/apiapp/tests/test_csrf_and_proxy.py",
+      "sha256": "f21b215275e2f546b8a363751cf90e5e9fccaa8cf216271736cfa3e73b6eed85",
+      "startLine": 45
+    }
+  ],
+  "id": "memory_b44d2447-f5c7-429b-aa77-5bb431e06216",
+  "projectId": "e0ca4103-5b1a-40ee-8522-40128747ea1f",
+  "rationale": "LOGIN_URL 缺陷之所以长期未被发现，直接原因是验收脚本的探针自动跟随跳转：从 / 出发经 302 落到 200 的登录页，最终状态码正常，中间那次指向 /accounts/login/ 的错误跳转被完全掩盖。单元测试里同样只断言了状态码，未检查 Location 目标。",
+  "subject": "验收方法论",
+  "summary": "检查跳转类行为时，不能让 HTTP 客户端自动跟随跳转就算了事——自动跟随会让「跳到错误地址」的缺陷表现为最终 200，从而被掩盖。正确做法是用不自动跟随的客户端读取 Location 头断言目标路径，再单独请求目标页确认它可达（非 404）。本次 /accounts/login/ 404 缺陷就是被自动跟随掩盖，直到经 ngrok 从新设备访问才暴露。",
+  "supersedes": [],
+  "tags": [
+    "测试",
+    "方法论",
+    "验收",
+    "教训"
+  ],
+  "title": "验收跳转必须断言 Location 目标，不能只看最终状态码",
+  "type": "lesson"
+}

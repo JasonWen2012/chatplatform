@@ -1,0 +1,47 @@
+{
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "conflicts": [],
+  "createdAt": "2026-09-13T08:03:58.655Z",
+  "draft": {
+    "alternatives": [],
+    "consequences": [
+      "不要用默认 settings 跑测试，会非常慢",
+      "新增涉及文件读写的测试不要改回系统临时目录",
+      "_test_media/ 与 logs/ 已在 .gitignore 中"
+    ],
+    "evidence": [
+      {
+        "endLine": 20,
+        "path": "backend/config/settings_test.py",
+        "sha256": "154c3caf39ff4c48e67b293ad62f99248b1d20e2775459850be2f5c0b06ab4f1",
+        "startLine": 8
+      },
+      {
+        "endLine": 16,
+        "path": "backend/config/settings_test.py",
+        "sha256": "897d49dae677dccd7a15dc65205362a5df1ee37addaeac522e7952be8f1d294a",
+        "startLine": 15
+      },
+      {
+        "endLine": 27,
+        "path": "backend/config/test_runner.py",
+        "sha256": "7c3fa7600e336b12ea4ada041196249c4fc387f45f2520d55ecf5054f37fe479",
+        "startLine": 17
+      }
+    ],
+    "rationale": "首次跑测试因默认配置超过 120 秒超时；另一次批量失败根因是 MEDIA_ROOT 指向 tempfile 目录而沙箱拒绝写入（[WinError 5]）。这两点都容易被误判为功能缺陷。",
+    "subject": "测试配置",
+    "summary": "测试必须通过 backend.config.settings_test 运行（manage.py 检测到 test 子命令会自动切换）。该配置做三件事：密码哈希换 MD5、LONGPOLL_TIMEOUT_SECONDS 置 0、MEDIA_ROOT 指向项目内 _test_media/（由 test_runner 在测试结束后自动清理）。不使用该配置时 171 个用例会因 PBKDF2 哈希与长轮询真实等待而跑到数分钟。MEDIA_ROOT 绝不可指向系统临时目录，否则沙箱下写文件报 [WinError 5] 拒绝访问。",
+    "supersedes": [],
+    "tags": [
+      "测试",
+      "django",
+      "性能"
+    ],
+    "title": "测试一律使用 backend.config.settings_test",
+    "type": "convention"
+  },
+  "id": "candidate_1649d631-64df-40df-b487-725e8e1b52ce",
+  "sessionId": "session-49fb8693-1a56-4587-b2c4-05604661920e",
+  "state": "pending"
+}

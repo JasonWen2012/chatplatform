@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}聊天 · 微信风即时通信{% endblock %}
+{% block body_class %}chat-body{% endblock %}
+
+{% block content %}
+{# 当前用户、偏好、能力声明与初始令牌由服务端注入，避免首屏多次往返 #}
+<script id="boot-data" type="application/json">
+  {"me": {{ me_json|safe }}, "token": "{{ api_token }}", "is_admin": {{ is_admin|yesno:"true,false" }}, "preferences": {{ preferences_json|safe }}, "capabilities": {{ capabilities_json|safe }}}
+</script>
+
+<div class="chat-app" id="chatApp">
+  <!-- 左侧：导航 + 会话列表 -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <img class="avatar" id="myAvatar" alt="我" src="">
+      <div class="me-info">
+        <div class="me-name" id="myName">{{ me.nickname }}</div>
+        <div class="me-status">在线</div>
+      </div>
+      {% if is_admin %}
+        <a class="icon-btn" href="/manage/" title="管理后台">🛠️</a>
+      {% endif %}
+      <button class="icon-btn" id="btnOpenSettings" title="设置">⚙️</button>
+      <a class="icon-btn" href="{% url 'web-api-docs' %}" title="协议文档">📖</a>
+      <a class="icon-btn" href="{% url 'web-logout' %}" title="退出登录">⏻</a>
+    </div>
+
+    <div class="sidebar-search">
+      <input type="search" id="conversationSearch" placeholder="搜索会话…">
+    </div>
+
+    <nav class="tabs" id="mainTabs">
+      <button class="tab active" data-view="conversations">聊天</button>
+      <button class="tab" data-view="contacts">
+        好友 <span class="badge hidden" id="friendReqBadge">0</span>
+      </button>
+      <button class="tab" data-view="requests">
+        新的朋友 <span class="badge hidden" id="newFriendBadge">0</span>
+      </button>
+    </nav>
+
+    <!-- 会话列表 -->
+    <div class="list-pane" id="paneConversations">
+      <div class="pane-actions">
+        <button class="btn btn-mini" id="btnNewGroup">＋ 发起群聊</button>
+      </div>
+      <ul class="conv-list" id="conversationList"></ul>
+      <div class="empty hidden" id="conversationEmpty">
+        还没有会话<br><span class="muted">到「好友」里找个人开始聊天</span>
+      </div>
+    </div>
+
+    <!-- 好友列表 -->
+    <div class="list-pane hidden" id="paneContacts">
+      <div class="pane-actions">
+        <input type="search" id="userSearch" placeholder="搜索用户（用户名或昵称）">
+      </div>
+      <ul class="conv-list" id="friendList"></ul>
+      <ul class="conv-list search-results hidden" id="userSearchResults"></ul>
+      <div class="empty hidden" id="friendEmpty">
+        还没有好友<br><span class="muted">搜索用户名添加好友</span>
+      </div>
+    </div>
+
+    <!-- 新的朋友 -->
+    <div class="list-pane hidden" id="paneRequests">
+      <ul class="conv-list" id="requestList"></ul>
+      <div class="empty hidden" id="requestEmpty">暂无好友申请</div>
+    </div>
+  </aside>
+
+  <!-- 右侧：消息区 -->
+  <main class="chat-main">
+    <div class="chat-placeholder" id="chatPlaceholder">
+      <div class="placeholder-inner">
+        <div class="placeholder-logo">💬</div>
+        <h2>选择左侧会话开始聊天</h2>
+        <p class="muted">支持文本、图片、文件、表情；未读、已读、撤回与输入状态实时同步。</p>
+      </div>
+    </div>
+
+    <section class="chat-view hidden" id="chatView">
+      <header class="chat-header">
+        <button class="icon-btn only-mobile" id="btnBackToList" title="返回">←</button>
+        <div class="chat-title-wrap">
+          <h2 id="chatTitle">会话</h2>
+          <div class="chat-sub" id="chatSub"></div>
+        </div>
+        <div class="chat-header-actions">
+          <span class="typing-hint" id="typingHint"></span>
+          <button class="icon-btn" id="btnConversationInfo" title="会话信息">⋯</button>
+        </div>
+      </header>
+
+      <div class="message-scroll" id="messageScroll">
+        <div class="load-more-wrap">
+          <button class="btn btn-mini hidden" id="btnLoadMore">加载更早的消息</button>
+        </div>
+        <div class="message-list" id="messageList"></div>
+      </div>
+
+      <footer class="composer">
+        <div class="composer-toolbar">
+          <button class="icon-btn" id="btnEmoji" title="表情">😊</button>
+          <button class="icon-btn" id="btnImage" title="发送图片">🖼️</button>
+          <button class="icon-btn" id="btnFile" title="发送文件">📎</button>
+          <input type="file" id="imageInput" accept="image/*" hidden>
+          <input type="file" id="fileInput" hidden>
+        </div>
+        <div class="composer-input">
+          <textarea id="messageInput" rows="1" placeholder="输入消息，Enter 发送，Shift+Enter 换行"></textarea>
+          <button class="btn btn-primary" id="btnSend">发送</button>
+        </div>
+        <div class="emoji-panel hidden" id="emojiPanel"></div>
+        <div class="reply-preview hidden" id="replyPreview">
+          <span class="reply-text"></span>
+          <button class="icon-btn" id="btnCancelReply" title="取消引用">✕</button>
+        </div>
+        <div class="upload-status hidden" id="uploadStatus"></div>
+      </footer>
+    </section>
+  </main>
+</div>
+
+<!-- 群聊创建弹窗 -->
+<div class="modal hidden" id="groupModal">
+  <div class="modal-card">
+    <h3>发起群聊</h3>
+    <label class="field">
+      <span>群名称</span>
+      <input type="text" id="groupTitle" maxlength="64" placeholder="请输入群名称">
+    </label>
+    <div class="modal-section-title">选择成员</div>
+    <ul class="pick-list" id="groupMemberPicker"></ul>
+    <div class="modal-actions">
+      <button class="btn" id="btnGroupCancel">取消</button>
+      <button class="btn btn-primary" id="btnGroupCreate">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- 会话信息弹窗（群管理入口） -->
+<div class="modal hidden" id="infoModal">
+  <div class="modal-card">
+    <h3 id="infoTitle">会话信息</h3>
+    <div id="infoBody"></div>
+    <div class="modal-actions">
+      <button class="btn" id="btnInfoClose">关闭</button>
+      <button class="btn btn-danger" id="btnInfoLeave">退出会话</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置弹窗：个人资料 + 偏好 + 全局搜索 -->
+<div class="modal hidden" id="settingsModal">
+  <div class="modal-card">
+    <h3>设置</h3>
+
+    <div class="modal-section-title">个人资料</div>
+    <label class="field">
+      <span>昵称</span>
+      <input type="text" id="profileNickname" maxlength="32" placeholder="别人看到的名字">
+    </label>
+    <label class="field">
+      <span>个性签名</span>
+      <input type="text" id="profileBio" maxlength="140" placeholder="介绍一下自己">
+    </label>
+    <div class="settings-row">
+      <span class="muted">头像</span>
+      <button class="btn btn-mini" id="btnChangeAvatar">更换头像</button>
+    </div>
+
+    <div class="modal-section-title">外观</div>
+    <label class="field">
+      <span>主题</span>
+      <select id="prefTheme">
+        <option value="system">跟随系统</option>
+        <option value="light">浅色</option>
+        <option value="dark">深色</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>字号</span>
+      <select id="prefFont">
+        <option value="small">小</option>
+        <option value="normal">标准</option>
+        <option value="large">大</option>
+      </select>
+    </label>
+    <label class="field">
+      <span>气泡样式</span>
+      <select id="prefBubble">
+        <option value="classic">经典</option>
+        <option value="compact">紧凑</option>
+      </select>
+    </label>
+    <div class="settings-row">
+      <label class="switch-row"><input type="checkbox" id="prefSound"> 消息提示音</label>
+      <label class="switch-row"><input type="checkbox" id="prefDesktop"> 桌面通知</label>
+    </div>
+
+    <div class="modal-section-title">搜索</div>
+    <div class="settings-row">
+      <input type="search" id="globalSearchInput" placeholder="搜索消息 / 用户 / 会话…">
+      <button class="btn btn-mini" id="btnGlobalSearch">搜索</button>
+    </div>
+    <ul class="search-results hidden" id="globalSearchResults"></ul>
+
+    <div class="modal-actions">
+      <button class="btn" id="btnSettingsClose">关闭</button>
+      <button class="btn btn-primary" id="btnSettingsSave">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/ui.js' %}"></script>
+<script src="{% static 'js/api.js' %}"></script>
+<script src="{% static 'js/transport.js' %}"></script>
+<script src="{% static 'js/app.js' %}"></script>
+{% endblock %}

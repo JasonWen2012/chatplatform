@@ -1,0 +1,41 @@
+{
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "conflicts": [],
+  "createdAt": "2026-09-13T08:04:22.737Z",
+  "draft": {
+    "alternatives": [],
+    "consequences": [
+      "公网暴露时登录/注册接口无暴力破解防护，缓解手段是 logs/app.log 中的 chat.auth 登录失败审计（记录用户名与来源 IP，优先读 X-Forwarded-For）",
+      "补限流时新增 backend/accounts/api/throttle.py，以装饰器 + settings 额度实现，测试环境默认关闭以免影响既有用例",
+      "README 的「安全取舍」章节已如实记录该缺口"
+    ],
+    "evidence": [
+      {
+        "endLine": 22,
+        "path": "backend/accounts/api/views.py",
+        "sha256": "1696629696f9762a627a4d7e660aa4a6c9300cef9eb24237b4acc0a1a7d27358",
+        "startLine": 20
+      },
+      {
+        "endLine": 133,
+        "path": "backend/config/settings.py",
+        "sha256": "d0bafedbef9f960bd4bef5d59068acf2a9832b6404a16e3709dc3f7a3b925da4",
+        "startLine": 120
+      }
+    ],
+    "rationale": "限流会与既有 171 个用例冲突（测试默认应关闭），且用户明确要求本轮不做。为免后续误以为遗漏，需要显式记录这是决策而非疏漏，并留下实现位置与缓解手段。",
+    "subject": "限流范围",
+    "summary": "按用户明确要求，本轮不做请求限流。这意味着 /auth/login/、/auth/register/、/auth/password/ 等接口没有频次限制，而服务已可通过 ngrok 暴露公网。缓解措施是保留登录失败审计日志（logger 名为 chat.auth，写入 logs/app.log）。若后续要补，落点已预留为 backend/accounts/api/throttle.py。",
+    "supersedes": [],
+    "tags": [
+      "决策",
+      "安全",
+      "范围"
+    ],
+    "title": "请求限流本轮暂缓（已知安全缺口）",
+    "type": "decision"
+  },
+  "id": "candidate_33a8313c-0b0c-4589-9d02-216304331b20",
+  "sessionId": "session-49fb8693-1a56-4587-b2c4-05604661920e",
+  "state": "pending"
+}

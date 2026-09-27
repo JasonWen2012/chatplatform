@@ -1,0 +1,47 @@
+{
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "conflicts": [],
+  "createdAt": "2026-09-13T08:32:33.894Z",
+  "draft": {
+    "alternatives": [],
+    "consequences": [
+      "经 ngrok 访问必须先设 DSH_PUBLIC_ORIGIN，否则登录/注册等 POST 报 403 CSRF",
+      "局域网纯 HTTP 访问时不要设 DSH_PUBLIC_HTTPS，否则带 Secure 的 Cookie 不会被浏览器回传，表现为登录后仍是未登录",
+      "ngrok 免费版每次重启域名会变，必须同步更新 DSH_PUBLIC_ORIGIN 并重启服务",
+      "改完 settings.py 后要重启服务；单元测试全绿不能证明当前运行实例配置正确，需用 scripts/ngrok_check.py 对着该实例实测"
+    ],
+    "evidence": [
+      {
+        "endLine": 29,
+        "path": "backend/config/settings.py",
+        "sha256": "f909f4c12159b05c1d7b28a431984c20c6a91458164bbd3b2d4b054821c275c1",
+        "startLine": 23
+      },
+      {
+        "endLine": 41,
+        "path": "backend/config/settings.py",
+        "sha256": "ca20b8a0e81b8f973ec46d5d8e53d2578b4bc6fb7fae613b48700bab6077b525",
+        "startLine": 37
+      }
+    ],
+    "rationale": "用户已两次遇到 ngrok 相关故障：第一次是 Origin 未信任导致登录 403；第二次是首页 404（根因是 LOGIN_URL 而非 ngrok，但当时极易误判为隧道问题）。实测确认：同一份代码在未注入 DSH_PUBLIC_ORIGIN 的实例上经 ngrok 登录返回 403；在正确注入的实例上 ngrok 场景验证 10/10 通过。因此「代码已修」与「当前实例可用」必须分开确认。",
+    "subject": "ngrok 与实例状态",
+    "summary": "经 ngrok（或任何 HTTPS 反向代理）对外访问时，必须用 scripts/start.ps1 -PublicOrigin <完整来源> 启动，或手动注入 DSH_PUBLIC_ORIGIN 与 DSH_PUBLIC_HTTPS=1。DSH_PUBLIC_ORIGIN 会同时写入 CSRF_TRUSTED_ORIGINS 与 ALLOWED_HOSTS；缺少它时 POST 会因 Origin 校验失败返回 403。另外注意：代码修好不等于运行中的实例已生效——settings.py 变更需要重启服务，而单元测试全绿也不能证明当前实例配置正确，必须用 scripts/ngrok_check.py 对着该实例实测。",
+    "supersedes": [],
+    "tags": [
+      "部署",
+      "ngrok",
+      "配置",
+      "运维"
+    ],
+    "title": "经 ngrok 访问必须注入公网来源，且代码修复需重启实例才生效",
+    "type": "constraint"
+  },
+  "id": "candidate_0f2bfa76-50ce-4725-b746-29b973d1c202",
+  "resolution": {
+    "at": "2026-09-13T08:33:47.013Z",
+    "memoryId": "memory_85a10e73-74d6-4f7d-a1a3-c967de9391aa"
+  },
+  "sessionId": "session-49fb8693-1a56-4587-b2c4-05604661920e",
+  "state": "approved"
+}

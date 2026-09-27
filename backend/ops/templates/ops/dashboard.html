@@ -1,0 +1,23 @@
+{% extends "ops/base.html" %}
+{% block title %}概览{% endblock %}
+{% block heading %}服务器概览{% endblock %}
+
+{% block content %}
+<div class="ops-stats" id="overviewStats">
+  <div class="ops-loading">加载中…</div>
+</div>
+
+<div class="ops-card">
+  <h3 class="ops-card-title">近 7 日消息量</h3>
+  <div class="ops-chart" id="trendChart"></div>
+</div>
+
+<div class="ops-card">
+  <h3 class="ops-card-title">活跃会话 Top 5</h3>
+  <div class="ops-table-wrap" id="topConversations"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>document.body.dataset.page = 'dashboard';</script>
+{% endblock %}

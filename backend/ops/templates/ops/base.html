@@ -1,0 +1,60 @@
+{% load static %}<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2b3a55">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}管理后台{% endblock %} · 即时通信</title>
+  <link rel="stylesheet" href="{% static 'ops/manage.css' %}">
+</head>
+<body class="ops-body" data-me-id="{{ me.id }}">
+<div class="ops-layout">
+
+  <aside class="ops-sidebar" id="opsSidebar">
+    <div class="ops-brand">
+      <span class="ops-brand-icon">🛠️</span>
+      <div>
+        <div class="ops-brand-title">管理后台</div>
+        <div class="ops-brand-sub">{{ me.nickname }}</div>
+      </div>
+    </div>
+
+    <nav class="ops-nav">
+      {% for item in nav_items %}
+        <a class="ops-nav-item {% if item.key == active_nav %}active{% endif %}"
+           href="{{ item.path }}">
+          <span class="ops-nav-icon">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+
+    <div class="ops-sidebar-foot">
+      <a class="ops-btn ops-btn-ghost ops-btn-block" href="/">← 返回聊天</a>
+      <a class="ops-btn ops-btn-ghost ops-btn-block" href="/admin/">原生后台</a>
+      <a class="ops-btn ops-btn-ghost ops-btn-block" href="{% url 'web-logout' %}">退出登录</a>
+    </div>
+  </aside>
+
+  <main class="ops-main">
+    <header class="ops-topbar">
+      <button class="ops-menu-btn" id="opsMenuBtn" aria-label="切换菜单">☰</button>
+      <h1 class="ops-page-title">{% block heading %}管理后台{% endblock %}</h1>
+      <div class="ops-topbar-right">
+        <span class="ops-admin-badge">管理员</span>
+      </div>
+    </header>
+
+    <div class="ops-content">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+
+<div class="ops-toast hidden" id="opsToast"></div>
+
+<script src="{% static 'ops/manage.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

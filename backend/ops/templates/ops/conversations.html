@@ -1,0 +1,33 @@
+{% extends "ops/base.html" %}
+{% block title %}会话浏览{% endblock %}
+{% block heading %}会话浏览{% endblock %}
+
+{% block content %}
+<div class="ops-card">
+  <div class="ops-toolbar" style="margin-bottom:12px">
+    <input class="ops-input" id="conversationsSearch" type="search" placeholder="搜索群名或成员昵称…">
+    <select class="ops-select" id="conversationsType">
+      <option value="">全部类型</option>
+      <option value="group">群聊</option>
+      <option value="direct">单聊</option>
+    </select>
+  </div>
+
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead>
+        <tr><th>ID</th><th>名称</th><th>类型</th><th>成员</th><th>消息</th><th>操作</th></tr>
+      </thead>
+      <tbody id="conversationsBody"></tbody>
+    </table>
+  </div>
+  <div id="conversationsPager"></div>
+  <p class="muted" style="font-size:12px;margin:10px 0 0">
+    查看非本人参与的会话会记入操作日志，便于事后审计。
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>document.body.dataset.page = 'conversations';</script>
+{% endblock %}

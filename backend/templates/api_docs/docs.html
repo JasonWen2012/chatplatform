@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}协议文档 · 微信风即时通信{% endblock %}
+
+{% block head_extra %}
+<style>
+  .doc-wrap { max-width: 900px; margin: 0 auto; padding: 28px 20px 60px; }
+  .doc-wrap h1 { font-size: 24px; margin: 0 0 6px; }
+  .doc-wrap h2 { font-size: 17px; margin: 30px 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--brand); display: inline-block; }
+  .doc-wrap h3 { font-size: 14px; margin: 18px 0 6px; color: #444; }
+  .doc-lead { color: var(--text-muted); font-size: 13px; line-height: 1.8; }
+  .endpoint { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; margin: 8px 0; }
+  .endpoint .method { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; color: #fff; margin-right: 8px; font-family: Consolas, monospace; }
+  .method.get { background: #2f9e44; }
+  .method.post { background: #1971c2; }
+  .method.patch { background: #e8590c; }
+  .method.delete { background: #c92a2a; }
+  .endpoint code.path { font-family: Consolas, monospace; font-size: 13px; }
+  .endpoint .desc { color: var(--text-muted); font-size: 12px; margin-top: 5px; }
+  pre { background: #1e1e1e; color: #e6e6e6; padding: 12px 14px; border-radius: var(--radius); overflow-x: auto; font-size: 12.5px; line-height: 1.6; }
+  code { font-family: Consolas, "Courier New", monospace; }
+  .inline-code { background: #f1f3f5; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+  .back-link { display: inline-block; margin-bottom: 14px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  th, td { border: 1px solid var(--border); padding: 7px 9px; text-align: left; }
+  th { background: #f8f9fa; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="doc-wrap">
+  <a class="back-link" href="{% url 'web-app' %}">← 返回聊天</a>
+  <h1>协议文档</h1>
+  <p class="doc-lead">
+    本服务同时提供网页界面与独立协议 API，两者行为完全一致。<br>
+    基础地址：<code class="inline-code">{{ base_url }}</code>
+  </p>
+
+  <h2>鉴权</h2>
+  <p class="doc-lead">
+    调用 <code class="inline-code">/auth/login/</code> 或 <code class="inline-code">/auth/register/</code> 获取
+    <code class="inline-code">token</code>，随后在每个请求头携带：
+  </p>
+  <pre>Authorization: Bearer &lt;token&gt;</pre>
+  <p class="doc-lead">
+    令牌有效期 7 天；网页端也可直接使用 Session Cookie。
+    未携带有效凭证时返回 <code class="inline-code">401</code> 与 JSON 错误体（不会跳转登录页）。
+  </p>
+
+  <h2>响应格式</h2>
+  <p class="doc-lead">所有接口统一返回 JSON：</p>
+  <pre>// 成功
+{ "ok": true, "data": { ... } }
+
+// 失败（HTTP 状态码同时具有语义）
+{ "ok": false, "error": { "code": "not_friends", "message": "需要先成为好友才能发起会话" } }</pre>
+
+  <h2>快速开始（curl）</h2>
+  <pre># 1. 注册并拿到令牌
+curl -s -X POST {{ base_url }}auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"secret123","nickname":"爱丽丝"}'
+
+# 2. 之后的请求带上令牌
+TOKEN=&lt;上一步返回的 token&gt;
+curl -s {{ base_url }}auth/me/ -H "Authorization: Bearer $TOKEN"
+
+# 3. 搜索用户 → 加好友 → 发起单聊
+curl -s "{{ base_url }}users/search/?q=bob" -H "Authorization: Bearer $TOKEN"
+curl -s -X POST {{ base_url }}friend-requests/ -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"user_id":2,"message":"你好"}'
+curl -s -X POST {{ base_url }}conversations/ -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"type":"direct","peer_id":2}'
+
+# 4. 发送消息（client_msg_id 用于幂等，重试不会重复发送）
+curl -s -X POST {{ base_url }}conversations/1/messages/ -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"body":"你好呀","client_msg_id":"c-001"}'
+
+# 5. 长轮询拉取新事件（cursor 单调递增）
+curl -s -X POST {{ base_url }}updates/ -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"cursor":0,"timeout":25}'</pre>
+
+  <h2>账号</h2>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/auth/register/</code>
+    <div class="desc">注册。body: <code class="inline-code">username</code>、<code class="inline-code">password</code>、可选 <code class="inline-code">nickname</code>。返回 token 与用户信息。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/auth/login/</code>
+    <div class="desc">登录，支持用户名或昵称。返回 token。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/auth/logout/</code>
+    <div class="desc">撤销当前令牌并清除会话。</div></div>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/auth/me/</code>
+    <div class="desc">当前用户信息。<code class="inline-code">PATCH</code> 可改昵称与个性签名。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/auth/password/</code>
+    <div class="desc">修改密码，成功后撤销全部旧令牌。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/auth/token/refresh/</code>
+    <div class="desc">换发新令牌（旧令牌立即失效）。</div></div>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/users/search/?q=关键词</code>
+    <div class="desc">按用户名或昵称搜索，最多 20 条。</div></div>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/users/&lt;id&gt;/</code>
+    <div class="desc">查看他人公开资料。</div></div>
+
+  <h2>联系人</h2>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/friends/</code>
+    <div class="desc">好友列表，含在线状态。</div></div>
+  <div class="endpoint"><span class="method delete">DELETE</span><code class="path">/friends/&lt;id&gt;/</code>
+    <div class="desc">删除好友（双向解除，保留历史消息）。</div></div>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/friend-requests/?direction=incoming|outgoing</code>
+    <div class="desc">好友申请列表。<code class="inline-code">incoming</code> 为收到的待处理申请。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/friend-requests/</code>
+    <div class="desc">发起申请。body: <code class="inline-code">user_id</code>、可选 <code class="inline-code">message</code>。若对方已向你发起申请则直接互为好友。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/friend-requests/&lt;id&gt;/accept|reject/</code>
+    <div class="desc">处理申请，仅收件人可操作。</div></div>
+
+  <h2>会话</h2>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/conversations/</code>
+    <div class="desc">会话列表，含未读数、置顶/免打扰、最后一条消息摘要。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/conversations/</code>
+    <div class="desc">创建会话。<code class="inline-code">{"type":"direct","peer_id":2}</code> 幂等复用既有单聊（需先成为好友）；<code class="inline-code">{"type":"group","title":"群名","member_ids":[2,3]}</code> 建群。</div></div>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/conversations/&lt;id&gt;/</code>
+    <div class="desc">会话详情与成员列表。</div></div>
+  <div class="endpoint"><span class="method patch">PATCH</span><code class="path">/conversations/&lt;id&gt;/</code>
+    <div class="desc">改群名（群主/管理员），或设置 <code class="inline-code">is_muted</code>、<code class="inline-code">is_pinned</code>。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/conversations/&lt;id&gt;/members/</code>
+    <div class="desc">添加成员（群聊，需管理员）。</div></div>
+  <div class="endpoint"><span class="method delete">DELETE</span><code class="path">/conversations/&lt;id&gt;/members/&lt;uid&gt;/</code>
+    <div class="desc">移除成员；移除自己即退出。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/conversations/&lt;id&gt;/leave/</code>
+    <div class="desc">退出会话。单聊退出将删除整段会话。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/conversations/&lt;id&gt;/read/</code>
+    <div class="desc">标记已读。body: <code class="inline-code">{"up_to_seq":12}</code>，省略则读到最新。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/conversations/&lt;id&gt;/typing/</code>
+    <div class="desc">上报「正在输入」，状态保留 5 秒。</div></div>
+
+  <h2>消息</h2>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/conversations/&lt;id&gt;/messages/?before_seq=&amp;after_seq=&amp;limit=</code>
+    <div class="desc">拉取消息。<code class="inline-code">after_seq</code> 用于断线补齐（升序），<code class="inline-code">before_seq</code> 用于向上翻历史。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/conversations/&lt;id&gt;/messages/</code>
+    <div class="desc">发送消息。body: <code class="inline-code">body</code>、可选 <code class="inline-code">attachment_id</code>、<code class="inline-code">reply_to_id</code>、<code class="inline-code">client_msg_id</code>（幂等键）。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/messages/&lt;id&gt;/revoke/</code>
+    <div class="desc">撤回消息。限发送后 2 分钟内，发送者或群管理员可操作。</div></div>
+
+  <h2>附件</h2>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/attachments/</code>
+    <div class="desc">上传附件，<code class="inline-code">multipart/form-data</code>，字段名 <code class="inline-code">file</code>，上限 20MB。图片自动生成缩略图并校验真实格式。</div></div>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/attachments/&lt;id&gt;/download/?thumb=1</code>
+    <div class="desc">下载附件，仅上传者或所属会话成员可访问。</div></div>
+
+  <h2>实时事件流（长轮询）</h2>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/updates/</code>
+    <div class="desc">请求 <code class="inline-code">{"cursor":N,"timeout":{{ longpoll_timeout }}}</code>；无新事件时挂起至多 {{ longpoll_timeout }} 秒，超时返回空数组。游标单调递增，保证不漏不重。</div></div>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/presence/?user_ids=1,2</code>
+    <div class="desc">查询指定用户在线状态。</div></div>
+
+  <h3>事件类型</h3>
+  <table>
+    <tr><th>type</th><th>说明</th></tr>
+    <tr><td><code>message.new</code></td><td>新消息，payload 为完整消息对象</td></tr>
+    <tr><td><code>message.revoked</code></td><td>消息被撤回，payload.message 为脱敏后的消息</td></tr>
+    <tr><td><code>message.removed</code></td><td>消息被管理员移除（正文与附件已清空）</td></tr>
+    <tr><td><code>read.receipt</code></td><td>已读回执（单聊含 reader_id，群聊含 reader_count）</td></tr>
+    <tr><td><code>typing</code></td><td>对方正在输入，payload.ttl 为有效秒数</td></tr>
+    <tr><td><code>conversation.updated</code></td><td>会话信息变更（如群名）</td></tr>
+    <tr><td><code>friend.request</code></td><td>收到好友申请</td></tr>
+    <tr><td><code>friend.accepted</code></td><td>好友申请被同意</td></tr>
+  </table>
+
+  <pre>// 事件信封
+{
+  "event_id": 128,              // 同时作为下一次请求的 cursor
+  "type": "message.new",
+  "conversation_id": 7,
+  "payload": { ... },
+  "ts": "2026-01-01T12:00:00+08:00"
+}</pre>
+
+  <h2>客户端能力声明</h2>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/capabilities/</code>
+    <div class="desc">无需鉴权。客户端据此选择连接方式与可用特性；登录/注册响应中也会返回同一份数据。</div></div>
+  <pre>{
+  "ok": true,
+  "data": { "capabilities": {
+    "api_version": "v1",
+    "transport": ["longpoll"],      // 二期将追加 "websocket"
+    "features": ["groups", "attachments", "read_receipts", "revoke",
+                 "typing", "reports", "preferences", "global_search"]
+  } }
+}</pre>
+
+  <h2>管理接口（仅管理员）</h2>
+  <p class="doc-lead">
+    以下端点要求账号具备 <code class="inline-code">is_staff</code>，否则返回
+    <code class="inline-code">403</code>。管理员界面 <code class="inline-code">/manage/</code> 使用同一批接口。
+  </p>
+  <table>
+    <tr><th>方法</th><th>路径</th><th>说明</th></tr>
+    <tr><td>GET</td><td><code>/ops/overview/</code></td><td>用户/会话/消息统计与近 7 日趋势</td></tr>
+    <tr><td>GET / PATCH</td><td><code>/ops/users/</code>、<code>/ops/users/&lt;id&gt;/</code></td><td>用户列表；禁用/解禁（不能禁用自己）</td></tr>
+    <tr><td>POST</td><td><code>/ops/users/&lt;id&gt;/revoke-tokens/</code></td><td>强制下线该用户全部设备</td></tr>
+    <tr><td>GET</td><td><code>/ops/conversations/</code>、<code>/ops/conversations/&lt;id&gt;/</code></td><td>会话列表与详情（可读非本人会话，读取会记审计）</td></tr>
+    <tr><td>GET</td><td><code>/ops/messages/</code></td><td>跨会话消息检索</td></tr>
+    <tr><td>POST</td><td><code>/ops/messages/&lt;id&gt;/remove/</code></td><td>移除消息（清空正文并向成员广播）</td></tr>
+    <tr><td>GET</td><td><code>/ops/reports/</code></td><td>举报列表</td></tr>
+    <tr><td>POST</td><td><code>/ops/reports/&lt;id&gt;/resolve|dismiss/</code></td><td>处理举报（结案可选同时移除消息）</td></tr>
+    <tr><td>GET</td><td><code>/ops/audit/</code></td><td>管理员操作日志</td></tr>
+  </table>
+
+  <h2>其他</h2>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/healthz</code>
+    <div class="desc">无需鉴权的健康检查，只返回 <code class="inline-code">ok</code>、<code class="inline-code">db</code>、<code class="inline-code">version</code>；数据库异常时返回 503。</div></div>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/search/?q=&amp;type=all|message|user|conversation</code>
+    <div class="desc">全局搜索。消息搜索**仅限本人参与的会话**，绝不会返回他人会话内容。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/messages/&lt;id&gt;/report/</code>
+    <div class="desc">举报消息（仅记录，由管理员在 /manage/reports/ 判断处置）。</div></div>
+  <div class="endpoint"><span class="method post">POST</span><code class="path">/users/me/avatar/</code>
+    <div class="desc">上传头像，服务端统一裁剪为 256×256 JPEG。</div></div>
+  <div class="endpoint"><span class="method get">GET</span><code class="path">/users/me/preferences/</code>
+    <div class="desc">读取/更新用户偏好（<code class="inline-code">PATCH</code>），供网页端与 App 共享。</div></div>
+
+  <h2>第二期：WebSocket 契约（已冻结）</h2>
+  <p class="doc-lead">
+    二期将新增 WebSocket 通道。为避免届时再做决策，这里先冻结契约：
+    <strong>事件信封、字段语义、游标机制与长轮询完全相同</strong>，
+    客户端只需把「HTTP 请求循环」换成「WebSocket 消息处理」。
+  </p>
+  <table>
+    <tr><th>项</th><th>约定</th></tr>
+    <tr><td>路径</td><td><code>ws://&lt;host&gt;/ws/events/</code>（TLS 下为 <code>wss://</code>）</td></tr>
+    <tr><td>鉴权</td><td>优先 <code>?token=&lt;访问令牌&gt;</code>；同源 Cookie 亦可</td></tr>
+    <tr><td>订阅</td><td>连接后客户端发 <code>{"type":"subscribe","cursor":N}</code>；服务端回 <code>{"type":"subscribed","cursor":M}</code></td></tr>
+    <tr><td>事件帧</td><td><code>{"type":"event","event":&lt;事件信封&gt;}</code>，信封字段与长轮询一致</td></tr>
+    <tr><td>心跳</td><td>服务端每 25 秒发 <code>{"type":"ping"}</code>；客户端回 <code>{"type":"pong"}</code>，60 秒无响应即断开</td></tr>
+    <tr><td>断线续传</td><td>重连后用 <code>subscribe</code> 携带最后收到的 <code>event_id</code> 作为 cursor，服务端补发期间事件</td></tr>
+    <tr><td>上报</td><td>仍走 HTTP：<code>POST /conversations/&lt;id&gt;/typing/</code>、<code>/read/</code>、<code>/messages/</code></td></tr>
+    <tr><td>错误</td><td><code>{"type":"error","error":{"code","message"}}</code>，错误码沿用 REST 的取值</td></tr>
+  </table>
+  <p class="doc-lead">
+    前端已按此契约抽象出传输层（<code class="inline-code">static/js/transport.js</code>）：
+    二期新增 <code class="inline-code">ws-transport.js</code> 实现同一接口即可，
+    事件处理与界面代码不需要改动。后端切换点见
+    <code class="inline-code">backend/realtime/registry.py</code>。
+  </p>
+</div>
+{% endblock %}

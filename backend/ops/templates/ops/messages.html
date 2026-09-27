@@ -1,0 +1,30 @@
+{% extends "ops/base.html" %}
+{% block title %}消息检索{% endblock %}
+{% block heading %}消息检索{% endblock %}
+
+{% block content %}
+<div class="ops-card">
+  <div class="ops-toolbar" style="margin-bottom:12px">
+    <input class="ops-input" id="messagesSearch" type="search" placeholder="搜索消息正文…">
+    <input class="ops-input" id="messagesConversation" type="number" min="1"
+           placeholder="会话 ID（可留空）">
+  </div>
+
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead>
+        <tr><th>ID</th><th>会话</th><th>发送者</th><th>内容</th><th>状态</th><th>操作</th></tr>
+      </thead>
+      <tbody id="messagesBody"></tbody>
+    </table>
+  </div>
+  <div id="messagesPager"></div>
+  <p class="muted" style="font-size:12px;margin:10px 0 0">
+    移除为软删除：正文与附件会真正清空，并向会话成员广播实时通知。已撤回的消息视为终态，不可再移除。
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>document.body.dataset.page = 'messages';</script>
+{% endblock %}

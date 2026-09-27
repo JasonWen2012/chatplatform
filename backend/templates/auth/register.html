@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}注册 · 微信风即时通信{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+  <div class="auth-brand">
+    <div class="auth-logo">✨</div>
+    <h1>创建账号</h1>
+    <p class="auth-sub">昵称留空会自动分配一个</p>
+  </div>
+
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+
+  <form method="post" class="auth-form" autocomplete="on">
+    {% csrf_token %}
+    <label class="field">
+      <span>用户名</span>
+      <input type="text" name="username" value="{{ username }}" required autofocus
+             maxlength="30" placeholder="用于登录，最多 30 字符" autocomplete="username">
+    </label>
+    <label class="field">
+      <span>昵称（可选）</span>
+      <input type="text" name="nickname" value="{{ nickname }}"
+             maxlength="32" placeholder="别人看到的名字" autocomplete="nickname">
+    </label>
+    <label class="field">
+      <span>密码</span>
+      <input type="password" name="password" required minlength="6"
+             placeholder="至少 6 位" autocomplete="new-password">
+    </label>
+    <label class="field">
+      <span>确认密码</span>
+      <input type="password" name="password_confirm" required minlength="6"
+             placeholder="再次输入密码" autocomplete="new-password">
+    </label>
+    <button type="submit" class="btn btn-primary btn-block">注 册</button>
+  </form>
+
+  <p class="auth-foot">
+    已有账号？<a href="{% url 'web-login' %}">返回登录</a>
+  </p>
+</div>
+{% endblock %}

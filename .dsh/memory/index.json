@@ -1,0 +1,95 @@
+{
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "entries": [
+    {
+      "createdAt": "2026-09-13T08:32:20.594Z",
+      "id": "memory_06e1ce8b-9471-4a01-b15c-6e86da711aea",
+      "status": "active",
+      "subject": "登录跳转配置",
+      "summary": "已在 settings.py 显式配置 LOGIN_URL = \"web-login\"（并设 LOGIN_REDIRECT_URL / LOGOUT_REDIRECT_URL）。原因：Django 的 redirect_to_login() 与 login_required 在 LOGIN_URL 未设置时会默认跳转到 /accounts/login/，而本项目没有该路径，导致「未登录访问首页或 /manage/」被重定向到一个 404 页面。backend/apiapp/web_views.py 的 chat_page 与 backend/accounts/api/guards.py 的 admin_required 都调用 redirect_to_login(request.get_full_path())，因此都依赖该配置。",
+      "tags": [
+        "django",
+        "认证",
+        "缺陷",
+        "跳转"
+      ],
+      "title": "LOGIN_URL 必须显式配置为 web-login，否则未登录跳转 404",
+      "type": "constraint"
+    },
+    {
+      "createdAt": "2026-09-13T08:32:33.894Z",
+      "id": "memory_85a10e73-74d6-4f7d-a1a3-c967de9391aa",
+      "status": "active",
+      "subject": "ngrok 与实例状态",
+      "summary": "经 ngrok（或任何 HTTPS 反向代理）对外访问时，必须用 scripts/start.ps1 -PublicOrigin <完整来源> 启动，或手动注入 DSH_PUBLIC_ORIGIN 与 DSH_PUBLIC_HTTPS=1。DSH_PUBLIC_ORIGIN 会同时写入 CSRF_TRUSTED_ORIGINS 与 ALLOWED_HOSTS；缺少它时 POST 会因 Origin 校验失败返回 403。另外注意：代码修好不等于运行中的实例已生效——settings.py 变更需要重启服务，而单元测试全绿也不能证明当前实例配置正确，必须用 scripts/ngrok_check.py 对着该实例实测。",
+      "tags": [
+        "部署",
+        "ngrok",
+        "配置",
+        "运维"
+      ],
+      "title": "经 ngrok 访问必须注入公网来源，且代码修复需重启实例才生效",
+      "type": "constraint"
+    },
+    {
+      "createdAt": "2026-09-13T08:04:22.690Z",
+      "id": "memory_98a154a1-46c1-4b18-9e52-88a306230d5e",
+      "status": "active",
+      "subject": "问题排查方法",
+      "summary": "探针（脚本或 HTTP 请求）失败时，不要先怀疑被测应用：先用已知可行的手段做最小对照（例如用 Django 测试客户端直连同一视图），确认应用行为，再逐个加变量定位探针自身的缺陷。工具报错里往往已含真实原因（argv 乱码、缺失的 cookie 名），要先读细节而非换方案。修复要落在源码并补测试锁定，不要靠改测试期望值让用例变绿。",
+      "tags": [
+        "调试",
+        "方法论",
+        "教训"
+      ],
+      "title": "探针失败先做最小对照，不要先怀疑应用",
+      "type": "lesson"
+    },
+    {
+      "createdAt": "2026-09-13T08:04:08.171Z",
+      "id": "memory_ac4cde9e-a91f-4561-8a8d-fc5cb10fa480",
+      "status": "active",
+      "subject": "管理员权限边界",
+      "summary": "服务器管理员（is_staff 且 is_active，判定入口为 backend.accounts.api.api.user_is_admin）在 chat 读路径上可旁路访问非本人参与的会话；写路径绝不旁路，管理员在非成员会话发消息/撤回/已读/加成员一律 404。旁路由 get_membership(..., allow_admin=True) 显式开启，当前仅 conversation_detail 的 GET 与 messages 的 GET 两处；旁路命中时返回 None，由调用方构造 admin_observer_membership（role=observer）。管理员旁路读取会写入 AdminActionLog 的 conversation.view。管理员不能禁用自己（返回 400 self_ban）。",
+      "tags": [
+        "权限",
+        "管理员",
+        "安全",
+        "设计决策"
+      ],
+      "title": "管理员读旁路、写不旁路",
+      "type": "decision"
+    },
+    {
+      "createdAt": "2026-09-13T08:32:20.635Z",
+      "id": "memory_b44d2447-f5c7-429b-aa77-5bb431e06216",
+      "status": "active",
+      "subject": "验收方法论",
+      "summary": "检查跳转类行为时，不能让 HTTP 客户端自动跟随跳转就算了事——自动跟随会让「跳到错误地址」的缺陷表现为最终 200，从而被掩盖。正确做法是用不自动跟随的客户端读取 Location 头断言目标路径，再单独请求目标页确认它可达（非 404）。本次 /accounts/login/ 404 缺陷就是被自动跟随掩盖，直到经 ngrok 从新设备访问才暴露。",
+      "tags": [
+        "测试",
+        "方法论",
+        "验收",
+        "教训"
+      ],
+      "title": "验收跳转必须断言 Location 目标，不能只看最终状态码",
+      "type": "lesson"
+    },
+    {
+      "createdAt": "2026-09-13T08:02:42.602Z",
+      "id": "memory_e961fed2-bc3d-4abc-930e-c914fac03f40",
+      "status": "active",
+      "subject": "本机运行环境与执行约束",
+      "summary": "本机可用 Python 3.13.2（C:\\Users\\JasonW\\AppData\\Local\\Programs\\Python\\Python313\\python.exe），全局与 .venv 均已装 Django 4.2.7 与 Pillow。项目位于中文路径下，命令行调用必须同时设置 PYTHONUTF8=1 与 PYTHONIOENCODING=utf-8，否则中文路径参数会以 ANSI 传入而乱码、文件按错误编码读取（曾导致「脚本语法错误」的假象）。沙箱会拒绝直接执行工作区内的脚本文件（python script.py、exec(open(...).read())、runpy.run_path 均报 Access is denied），但内联 python -c 与 manage.py 入口可用。审批提示被禁用时不得请求提权。",
+      "tags": [
+        "环境",
+        "windows",
+        "编码",
+        "沙箱"
+      ],
+      "title": "Python/Django 与沙箱执行约束：必须用 UTF-8 环境变量与内联启动",
+      "type": "fact"
+    }
+  ],
+  "generatedAt": "2026-09-13T08:33:47.021Z"
+}

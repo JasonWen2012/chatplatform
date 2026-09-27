@@ -1,0 +1,47 @@
+{
+  "alternatives": [],
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "approvedAt": "2026-09-13T08:06:10.200Z",
+  "approvedBy": "human",
+  "consequences": [
+    "新增读接口若需要让管理员看非成员会话，必须显式传 allow_admin=True，且只能加在读路径",
+    "新增写接口不要传 allow_admin，否则管理员可绕过成员身份写数据",
+    "get_membership 在旁路命中时返回 None，调用方必须处理该分支",
+    "管理员账户仍可正常使用全部聊天功能，未做功能删减"
+  ],
+  "createdAt": "2026-09-13T08:04:08.171Z",
+  "evidence": [
+    {
+      "endLine": 66,
+      "path": "backend/chat/api/views.py",
+      "sha256": "b07b2798b69e5205975701298e6ab566cccb29ee447010c5adde621a8c3e8b88",
+      "startLine": 46
+    },
+    {
+      "endLine": 226,
+      "path": "backend/chat/api/views.py",
+      "sha256": "e8547f6cb4b205e7958b6a89fc494fe8eac2da0f8422c5056c66699fa2c1e400",
+      "startLine": 223
+    },
+    {
+      "endLine": 465,
+      "path": "backend/chat/api/views.py",
+      "sha256": "e8547f6cb4b205e7958b6a89fc494fe8eac2da0f8422c5056c66699fa2c1e400",
+      "startLine": 462
+    }
+  ],
+  "id": "memory_ac4cde9e-a91f-4561-8a8d-fc5cb10fa480",
+  "projectId": "e0ca4103-5b1a-40ee-8522-40128747ea1f",
+  "rationale": "治理需要管理员查看被举报内容所在的会话（内容可能在管理员未参与的会话中），但若连写操作也旁路，管理员即可冒名发言，破坏身份可信度。因此设计为读旁路、写不旁路，并要求旁路读取留审计。",
+  "subject": "管理员权限边界",
+  "summary": "服务器管理员（is_staff 且 is_active，判定入口为 backend.accounts.api.api.user_is_admin）在 chat 读路径上可旁路访问非本人参与的会话；写路径绝不旁路，管理员在非成员会话发消息/撤回/已读/加成员一律 404。旁路由 get_membership(..., allow_admin=True) 显式开启，当前仅 conversation_detail 的 GET 与 messages 的 GET 两处；旁路命中时返回 None，由调用方构造 admin_observer_membership（role=observer）。管理员旁路读取会写入 AdminActionLog 的 conversation.view。管理员不能禁用自己（返回 400 self_ban）。",
+  "supersedes": [],
+  "tags": [
+    "权限",
+    "管理员",
+    "安全",
+    "设计决策"
+  ],
+  "title": "管理员读旁路、写不旁路",
+  "type": "decision"
+}

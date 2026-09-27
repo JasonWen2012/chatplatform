@@ -1,0 +1,41 @@
+{
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "conflicts": [],
+  "createdAt": "2026-09-13T08:03:58.690Z",
+  "draft": {
+    "alternatives": [],
+    "consequences": [
+      "api/ 子目录内的模块要导入 app 级模块，必须写绝对路径 from backend.<app> import x",
+      "不要继续使用 `from . import services` 这类相对导入",
+      "现有写法参考 backend/chat/api/views.py 与 backend/accounts/api/guards.py"
+    ],
+    "evidence": [
+      {
+        "endLine": 30,
+        "path": "backend/chat/api/views.py",
+        "sha256": "1f2fef9901438a9f4f3cfd3bcca1df8bd777981dc810ffe37f61f6a1c5a70527",
+        "startLine": 17
+      },
+      {
+        "endLine": 7,
+        "path": "backend/accounts/api/urls.py",
+        "sha256": "0beef6d03eef65bba769e52e7dcf769a85ba531fdbe5f5b5e50022c5808f1c9f",
+        "startLine": 1
+      }
+    ],
+    "rationale": "施工时把 views 放进 api/ 子目录后仍写 `from . import services`，导致 ImportError 并让 Django 无法加载任何 URL，表现为启动即失败。相对导入在深层子目录中指向的是该子目录本身，容易误读。",
+    "subject": "应用分层与导入",
+    "summary": "每个应用固定在根目录放 models.py / services.py / serializers.py / views.py（如有），API 端点统一放在 <app>/api/ 子目录（views.py 与 urls.py），网页视图放在 <app>/web_views.py。因为 api/ 是子目录，其中模块引用 app 级模块时必须使用绝对导入 backend.<app>.xxx；写成 `from . import services` 会解析到 backend.<app>.api.services 并抛 ImportError。",
+    "supersedes": [],
+    "tags": [
+      "django",
+      "结构",
+      "导入"
+    ],
+    "title": "应用分层约定：api/ 子目录内必须绝对导入",
+    "type": "convention"
+  },
+  "id": "candidate_41086a90-9bad-4dd4-8d64-3d778735128d",
+  "sessionId": "session-49fb8693-1a56-4587-b2c4-05604661920e",
+  "state": "pending"
+}

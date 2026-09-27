@@ -1,0 +1,46 @@
+{
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "conflicts": [],
+  "createdAt": "2026-09-13T08:02:42.602Z",
+  "draft": {
+    "alternatives": [],
+    "consequences": [
+      "所有 python 调用需带 PYTHONUTF8=1 与 PYTHONIOENCODING=utf-8，并显式设置 UTF-8 控制台输出编码",
+      "驱动 Django 管理命令请用 python -c 内联引导或 manage.py，不要依赖执行工作区脚本文件",
+      "审批被禁用时遇到沙箱拒绝不要重试提权，应改为重构命令或说明限制"
+    ],
+    "evidence": [
+      {
+        "endLine": 31,
+        "path": "manage.py",
+        "sha256": "8aaa9e6e913dbae8f57035abed8024ed8990e78f48219c2ef5c4109d4c67733e",
+        "startLine": 16
+      },
+      {
+        "endLine": 30,
+        "path": "scripts/start.ps1",
+        "sha256": "8a410a341c062dd97c52b55b0acf35cbc0a38a4d6ae757d2f6849de651e91e49",
+        "startLine": 22
+      }
+    ],
+    "rationale": "这两条约束在本次施工中反复造成误判：先误以为沙箱完全禁止运行 Python，后又误以为脚本有语法错误，实际都只是编码与执行方式问题。记录具体可行的调用形态可避免后续重复排查。",
+    "subject": "本机运行环境与执行约束",
+    "summary": "本机可用 Python 3.13.2（C:\\Users\\JasonW\\AppData\\Local\\Programs\\Python\\Python313\\python.exe），全局与 .venv 均已装 Django 4.2.7 与 Pillow。项目位于中文路径下，命令行调用必须同时设置 PYTHONUTF8=1 与 PYTHONIOENCODING=utf-8，否则中文路径参数会以 ANSI 传入而乱码、文件按错误编码读取（曾导致「脚本语法错误」的假象）。沙箱会拒绝直接执行工作区内的脚本文件（python script.py、exec(open(...).read())、runpy.run_path 均报 Access is denied），但内联 python -c 与 manage.py 入口可用。审批提示被禁用时不得请求提权。",
+    "supersedes": [],
+    "tags": [
+      "环境",
+      "windows",
+      "编码",
+      "沙箱"
+    ],
+    "title": "Python/Django 与沙箱执行约束：必须用 UTF-8 环境变量与内联启动",
+    "type": "fact"
+  },
+  "id": "candidate_de0aa804-cde6-4a95-91b5-52272810c7f3",
+  "resolution": {
+    "at": "2026-09-13T08:06:05.072Z",
+    "memoryId": "memory_e961fed2-bc3d-4abc-930e-c914fac03f40"
+  },
+  "sessionId": "session-49fb8693-1a56-4587-b2c4-05604661920e",
+  "state": "approved"
+}

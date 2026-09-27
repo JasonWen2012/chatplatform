@@ -1,0 +1,36 @@
+{% extends "ops/base.html" %}
+{% block title %}用户管理{% endblock %}
+{% block heading %}用户管理{% endblock %}
+
+{% block content %}
+<div class="ops-card">
+  <div class="ops-toolbar" style="margin-bottom:12px">
+    <input class="ops-input" id="usersSearch" type="search" placeholder="搜索账号或昵称…">
+    <select class="ops-select" id="usersStatus">
+      <option value="">全部状态</option>
+      <option value="active">正常</option>
+      <option value="banned">已禁用</option>
+      <option value="staff">管理员</option>
+    </select>
+  </div>
+
+  <div class="ops-table-wrap">
+    <table class="ops-table">
+      <thead>
+        <tr>
+          <th>ID</th><th>账号</th><th>状态</th><th>消息数</th><th>会话数</th><th>注册时间</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+  </div>
+  <div id="usersPager"></div>
+  <p class="muted" style="font-size:12px;margin:10px 0 0">
+    「禁用」会立刻撤销该用户全部令牌与会话，使其无法继续访问；「强制下线」仅让现有登录失效，账号仍可重新登录。
+  </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>document.body.dataset.page = 'users';</script>
+{% endblock %}

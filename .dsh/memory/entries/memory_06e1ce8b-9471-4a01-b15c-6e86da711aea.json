@@ -1,0 +1,46 @@
+{
+  "alternatives": [],
+  "apiVersion": "dsh.project-memory/v1alpha1",
+  "approvedAt": "2026-09-13T08:33:31.242Z",
+  "approvedBy": "human",
+  "consequences": [
+    "修改后台登录路径或新增受保护页面后，必须确认跳转目标仍是 /login/",
+    "任何未登录跳转都要检查 Location 头，而不是只看最终状态码",
+    "不要往 /accounts/login/ 写兼容视图，根因在 LOGIN_URL 未配置"
+  ],
+  "createdAt": "2026-09-13T08:32:20.594Z",
+  "evidence": [
+    {
+      "endLine": 126,
+      "path": "backend/config/settings.py",
+      "sha256": "bea164471876c98a5df38bcfeea242c38dcc6909ad11c7b9cef34061af7c1c20",
+      "startLine": 121
+    },
+    {
+      "endLine": 119,
+      "path": "backend/apiapp/web_views.py",
+      "sha256": "72808d27eb585eec9be74d083a65c0e758d8c6b3de08bce908826801f81a2d3b",
+      "startLine": 118
+    },
+    {
+      "endLine": 34,
+      "path": "backend/accounts/api/guards.py",
+      "sha256": "2fcea6a540401cbd2552dddc3621ff29464af0f366e4c7a0d1f954ad192c0c41",
+      "startLine": 28
+    }
+  ],
+  "id": "memory_06e1ce8b-9471-4a01-b15c-6e86da711aea",
+  "projectId": "e0ca4103-5b1a-40ee-8522-40128747ea1f",
+  "rationale": "用户从另一台设备经 ngrok 访问时报 404，服务端日志给出 Not Found: /accounts/login/。根因是 Django 的 redirect_to_login() 与 login_required 在未配置 LOGIN_URL 时会默认跳到 /accounts/login/，而本项目登录页在 /login/。该缺陷一直存在，只是本机浏览器通常已登录故未触发；换设备是全新会话，一进首页即 404，且很容易被误判为 ngrok 或网络问题。",
+  "subject": "登录跳转配置",
+  "summary": "已在 settings.py 显式配置 LOGIN_URL = \"web-login\"（并设 LOGIN_REDIRECT_URL / LOGOUT_REDIRECT_URL）。原因：Django 的 redirect_to_login() 与 login_required 在 LOGIN_URL 未设置时会默认跳转到 /accounts/login/，而本项目没有该路径，导致「未登录访问首页或 /manage/」被重定向到一个 404 页面。backend/apiapp/web_views.py 的 chat_page 与 backend/accounts/api/guards.py 的 admin_required 都调用 redirect_to_login(request.get_full_path())，因此都依赖该配置。",
+  "supersedes": [],
+  "tags": [
+    "django",
+    "认证",
+    "缺陷",
+    "跳转"
+  ],
+  "title": "LOGIN_URL 必须显式配置为 web-login，否则未登录跳转 404",
+  "type": "constraint"
+}
